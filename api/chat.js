@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
+        "x-api-key": sk-ant-ai-interview-coach,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify(req.body),

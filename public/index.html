@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 面试教练 · 智聘未来大赛</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: #f5f6f7; min-height: 100vh; color: #1a1a1a; }
+  #root { min-height: 100vh; }
+  input, textarea, button, select { font-family: inherit; }
+  textarea { border: 1px solid #d0d5dd; border-radius: 8px; padding: 10px 12px; font-size: 13px; outline: none; transition: border 0.15s; background: #fff; color: #1a1a1a; }
+  textarea:focus { border-color: #1D9E75; }
+  input[type="text"], input:not([type]) { border: 1px solid #d0d5dd; border-radius: 8px; padding: 0 12px; height: 38px; font-size: 13px; outline: none; transition: border 0.15s; background: #fff; color: #1a1a1a; }
+  input:focus { border-color: #1D9E75; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useRef, useEffect } = React;
+
+// ============================================================
+// 🏆 比赛技术资源配置
+// Demo 环境: Anthropic API（当前使用）
+// 正式提交: 替换为阿里云通义千问
+//   endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+//   model: qwen-max
+//   headers: { "Authorization": "Bearer YOUR_DASHSCOPE_KEY", "Content-Type": "application/json" }
+// 或接入 Coze 工作流 API
+// ============================================================
+const callAPI = async (system, messages) => {
+  const body = { model: "claude-sonnet-4-20250514", max_tokens: 2000, messages };
+  if (system) body.system = system;
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API 错误: ${res.status}`);
+  const data = await res.json();
+  return (data.content || []).map(b => b.text || "").join("");
+};
+
+const fileToBase64 = f => new Promise((ok, err) => {
+  const r = new FileReader();
+  r.onload = () => ok(r.result.split(",")[1]);
+  r.onerror = err;
+  r.readAsDataURL(f);
+});
+
+const fileBlock = async f => {
+  const d = await fileToBase64(f);
+  return f.type === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: d } }
+    : { type: "image", source: { type: "base64", media_type: f.type, data: d } };
+};
+
+// ---- PROMPTS ----
+const PARSE_SYS = `你是资深HR，分析简历和JD后严格输出JSON（不含Markdown代码块、不含其他文字）：
+{"candidate":{"name":"","target_role":"","education":"","experiences":[""],"skills":[""]},"jd":{"role":"","company":"","hard_requirements":[""],"core_duties":[""]},"match":{"score":0,"strengths":[""],"risks":[""]},"questions":[{"type":"行为类/能力类/压力类","question":""}]}
+questions生成8道，必须基于候选人真实经历和JD要求定制，不要通用题。`;
+
+const iTSys = p => `你是${p.jd?.company||"面试公司"}面试官，面试${p.candidate?.name||"候选人"}，应聘${p.jd?.role||"该岗位"}。
+候选人：${p.candidate?.education}；${(p.candidate?.experiences||[]).join("；")}；技能：${(p.candidate?.skills||[]).join("、")}
+题库：${(p.questions||[]).map((q,i)=>`${i+1}.[${q.type}]${q.question}`).join(" | ")}
+规则：①每次只问一题 ②回答简短时追问 ③不给评价或暗示 ④按顺序问完所有题后说"感谢您参加今天的面试，我们会尽快给您反馈。"并输出[INTERVIEW_END]`;
+
+const rptSys = (p, qa) => `你是专业面试辅导专家。复盘以下面试，严格输出JSON（不含Markdown代码块）：
+候选人：${p.candidate?.name}，应聘${p.jd?.role}@${p.jd?.company||""}
+背景：${(p.candidate?.experiences||[]).join("；")}；技能：${(p.candidate?.skills||[]).join("、")}
+记录：${qa.map((x,i)=>`Q${i+1}:${x.q}|A${i+1}:${x.a}`).join("||")}
+格式：{"items":[{"question":"","summary":"","star":{"s":0,"t":0,"a":0,"r":0},"score":0,"issues":[""],"reference":"(200-300字，第一人称，STAR结构，结合候选人真实经历，含具体数据，可直接背诵使用)","tip":""}],"overall":{"avg":0,"best":0,"worst":0,"suggestions":[""]}}`;
+
+// ---- COLORS ----
+const T = "#1D9E75", TL = "rgba(29,158,117,0.1)", TD = "#0F6E56";
+
+// ---- COMPONENTS ----
+function StepBar({ cur }) {
+  const steps = ["信息录入", "模拟面试", "复盘报告"];
+  return React.createElement("div", {
+    style: { display: "flex", alignItems: "center", padding: "0 0.5rem", marginBottom: "1.75rem" }
+  },
+    steps.map((s, i) => React.createElement("div", {
+      key: i,
+      style: { display: "flex", alignItems: "center", flex: i < 2 ? 1 : "none" }
+    },
+      React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4 } },
+        React.createElement("div", {
+          style: {
+            width: 32, height: 32, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: i <= cur ? T : "#e9ecef",
+            border: `2px solid ${i <= cur ? T : "#ced4da"}`,
+            color: i <= cur ? "#fff" : "#868e96",
+            fontSize: 13, fontWeight: 500,
+          }
+        }, i < cur ? "✓" : i + 1),
+        React.createElement("span", {
+          style: { fontSize: 11, whiteSpace: "nowrap", color: i === cur ? TD : "#868e96", fontWeight: i === cur ? 500 : 400 }
+        }, s)
+      ),
+      i < 2 && React.createElement("div", {
+        style: { flex: 1, height: 2, background: i < cur ? T : "#dee2e6", margin: "0 6px", marginBottom: 16 }
+      })
+    ))
+  );
+}
+
+function FileUpload({ accept, label, file, onFile }) {
+  const ref = useRef();
+  return React.createElement("div", {
+    onClick: () => ref.current.click(),
+    style: {
+      border: `1.5px dashed ${file ? T : "#ced4da"}`,
+      borderRadius: 8, padding: "1.5rem", cursor: "pointer",
+      textAlign: "center", background: file ? TL : "#f8f9fa",
+      transition: "all 0.15s",
+    }
+  },
+    React.createElement("input", { ref, type: "file", accept, style: { display: "none" }, onChange: e => onFile(e.target.files[0]) }),
+    React.createElement("div", { style: { fontSize: 28, marginBottom: 6 } }, file ? "✓" : "📎"),
+    React.createElement("div", { style: { fontSize: 12, color: file ? TD : "#868e96" } },
+      file ? file.name : label
+    )
+  );
+}
+
+function StarBar({ k, score }) {
+  const labels = { s: "Situation 背景", t: "Task 任务", a: "Action 行动", r: "Result 结果" };
+  const colors = { s: "#185FA5", t: T, a: "#BA7517", r: "#A32D2D" };
+  const pct = Math.min(100, Math.round(((score || 0) / 25) * 100));
+  return React.createElement("div", { style: { marginBottom: 7 } },
+    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 } },
+      React.createElement("span", { style: { color: "#868e96" } }, labels[k]),
+      React.createElement("span", { style: { fontWeight: 500, color: "#1a1a1a" } }, `${score || 0}/25`)
+    ),
+    React.createElement("div", { style: { height: 5, borderRadius: 3, background: "#e9ecef" } },
+      React.createElement("div", { style: { height: "100%", borderRadius: 3, width: `${pct}%`, background: colors[k], transition: "width 0.6s" } })
+    )
+  );
+}
+
+// ---- MAIN APP ----
+function App() {
+  const [step, setStep] = useState(0);
+  const [rMode, setRMode] = useState("text");
+  const [jMode, setJMode] = useState("text");
+  const [rText, setRText] = useState("");
+  const [jText, setJText] = useState("");
+  const [rFile, setRFile] = useState(null);
+  const [jFile, setJFile] = useState(null);
+  const [parsed, setParsed] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [hint, setHint] = useState("");
+  const [ended, setEnded] = useState(false);
+  const [report, setReport] = useState(null);
+  const [exp, setExp] = useState({});
+  const chatRef = useRef();
+
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [msgs]);
+
+  const handleStart = async () => {
+    if (!rText && !rFile) { alert("请输入或上传简历"); return; }
+    if (!jText && !jFile) { alert("请输入或上传JD"); return; }
+    setLoading(true); setHint("AI 正在解析简历和岗位信息...");
+    try {
+      const content = [];
+      if (rFile) { content.push(await fileBlock(rFile)); content.push({ type: "text", text: "以上是候选人简历。" }); }
+      else content.push({ type: "text", text: `简历：\n${rText}` });
+      if (jFile) { content.push(await fileBlock(jFile)); content.push({ type: "text", text: "以上是岗位JD，请完成解析。" }); }
+      else content.push({ type: "text", text: `JD：\n${jText}\n\n请完成解析。` });
+
+      const raw = await callAPI(PARSE_SYS, [{ role: "user", content }]);
+      const p = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      setParsed(p);
+
+      setHint("面试官正在准备中...");
+      const opening = await callAPI(iTSys(p), [{ role: "user", content: "请开始面试。" }]);
+      setMsgs([{ role: "assistant", content: opening }]);
+      setStep(1);
+    } catch (e) {
+      alert("解析失败，请检查输入：" + e.message);
+    } finally {
+      setLoading(false); setHint("");
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = { role: "user", content: input };
+    const next = [...msgs, userMsg];
+    setMsgs(next); setInput(""); setLoading(true);
+    try {
+      const apiMsgs = [
+        { role: "user", content: "请开始面试。" },
+        ...next.map(m => ({ role: m.role, content: m.content }))
+      ];
+      const ai = await callAPI(iTSys(parsed), apiMsgs);
+      const hasEnd = ai.includes("[INTERVIEW_END]");
+      setMsgs([...next, { role: "assistant", content: ai.replace("[INTERVIEW_END]", "").trim() }]);
+      if (hasEnd) setEnded(true);
+    } finally { setLoading(false); }
+  };
+
+  const handleReport = async () => {
+    const qa = [];
+    for (let i = 0; i < msgs.length - 1; i++) {
+      if (msgs[i].role === "assistant" && msgs[i + 1]?.role === "user")
+        qa.push({ q: msgs[i].content, a: msgs[i + 1].content });
+    }
+    setLoading(true); setHint("AI 正在生成逐题复盘报告，请稍候..."); setStep(2);
+    try {
+      const raw = await callAPI(null, [{ role: "user", content: rptSys(parsed, qa) }]);
+      setReport(JSON.parse(raw.replace(/```json|```/g, "").trim()));
+    } catch (e) {
+      alert("报告生成失败：" + e.message);
+    } finally { setLoading(false); setHint(""); }
+  };
+
+  const restart = () => {
+    setStep(0); setParsed(null); setMsgs([]); setReport(null);
+    setEnded(false); setExp({}); setRText(""); setJText(""); setRFile(null); setJFile(null);
+  };
+
+  const tabBtn = (active) => ({
+    padding: "5px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer",
+    background: active ? T : "transparent",
+    color: active ? "#fff" : "#868e96",
+    border: `1px solid ${active ? T : "#ced4da"}`,
+    fontWeight: active ? 500 : 400,
+  });
+
+  const card = {
+    background: "#fff", border: "0.5px solid #e9ecef",
+    borderRadius: 12, padding: "1.25rem",
+  };
+
+  return React.createElement("div", { style: { minHeight: "100vh", background: "#f5f6f7", padding: "1.5rem 1rem" } },
+    React.createElement("div", { style: { maxWidth: 760, margin: "0 auto" } },
+
+      // Header
+      React.createElement("div", { style: { marginBottom: "1.5rem" } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 } },
+          React.createElement("div", { style: { width: 8, height: 26, background: T, borderRadius: 2 } }),
+          React.createElement("h1", { style: { margin: 0, fontWeight: 600, fontSize: 20, color: "#1a1a1a" } }, "AI 面试教练")
+        ),
+        React.createElement("p", { style: { margin: 0, fontSize: 12, color: "#868e96", paddingLeft: 18 } },
+          "智联招聘·智聘未来大赛 | AI+求职赛道 | 技术支持：阿里云通义千问 / Coze"
+        )
+      ),
+
+      React.createElement(StepBar, { cur: step }),
+
+      // ===== STEP 0: INPUT =====
+      step === 0 && React.createElement("div", null,
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" } },
+
+          // Resume
+          React.createElement("div", { style: card },
+            React.createElement("div", { style: { fontWeight: 500, fontSize: 14, marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: 6 } },
+              "📄 简历上传"
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: "0.75rem" } },
+              React.createElement("button", { onClick: () => setRMode("text"), style: tabBtn(rMode === "text") }, "文字粘贴"),
+              React.createElement("button", { onClick: () => setRMode("file"), style: tabBtn(rMode === "file") }, "图片 / PDF")
+            ),
+            rMode === "text"
+              ? React.createElement("textarea", {
+                value: rText, onChange: e => setRText(e.target.value),
+                placeholder: "粘贴简历文字内容...",
+                style: { width: "100%", minHeight: 160, resize: "vertical" }
+              })
+              : React.createElement(FileUpload, { accept: "image/*,.pdf", label: "点击上传简历图片或 PDF", file: rFile, onFile: setRFile })
+          ),
+
+          // JD
+          React.createElement("div", { style: card },
+            React.createElement("div", { style: { fontWeight: 500, fontSize: 14, marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: 6 } },
+              "💼 岗位 JD"
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: "0.75rem" } },
+              React.createElement("button", { onClick: () => setJMode("text"), style: tabBtn(jMode === "text") }, "文字粘贴"),
+              React.createElement("button", { onClick: () => setJMode("file"), style: tabBtn(jMode === "file") }, "拍照 / 图片")
+            ),
+            jMode === "text"
+              ? React.createElement("textarea", {
+                value: jText, onChange: e => setJText(e.target.value),
+                placeholder: "粘贴岗位 JD 内容...",
+                style: { width: "100%", minHeight: 160, resize: "vertical" }
+              })
+              : React.createElement(FileUpload, { accept: "image/*", label: "点击上传 JD 截图 / 拍照", file: jFile, onFile: setJFile })
+          )
+        ),
+
+        React.createElement("div", {
+          style: {
+            background: TL, border: `0.5px solid ${T}50`,
+            borderRadius: 8, padding: "0.65rem 1rem", marginBottom: "0.75rem",
+            fontSize: 12, color: TD, lineHeight: 1.6,
+          }
+        },
+          "💡 竞品对比优势：① 简历支持 PDF + 图片双格式，门槛低于豆包（仅支持拍照）；② 面试后生成逐题「可直接使用」参考答案，解决 BOSS 直聘只给方向提示的核心痛点"
+        ),
+
+        React.createElement("button", {
+          onClick: handleStart, disabled: loading,
+          style: {
+            width: "100%", padding: "0.8rem",
+            background: loading ? "#e9ecef" : T,
+            color: loading ? "#868e96" : "#fff",
+            border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500,
+            cursor: loading ? "default" : "pointer",
+          }
+        }, loading ? (hint || "处理中...") : "开始面试准备 →")
+      ),
+
+      // ===== STEP 1: INTERVIEW =====
+      step === 1 && parsed && React.createElement("div", null,
+
+        // Info strip
+        React.createElement("div", {
+          style: {
+            background: TL, border: `0.5px solid ${T}40`, borderRadius: 8,
+            padding: "0.65rem 1rem", marginBottom: "1rem",
+            display: "flex", gap: "1.5rem", flexWrap: "wrap", alignItems: "center",
+          }
+        },
+          [
+            ["候选人", parsed.candidate?.name || "—"],
+            ["应聘岗位", parsed.jd?.role || "—"],
+            ["公司", parsed.jd?.company || "—"],
+            ["匹配度", `${parsed.match?.score || 0}分`],
+            ["面试题数", `${parsed.questions?.length || 0}题`],
+          ].map(([l, v]) => React.createElement("div", { key: l },
+            React.createElement("div", { style: { fontSize: 10, color: TD, fontWeight: 500 } }, l),
+            React.createElement("div", { style: { fontSize: 13, fontWeight: l === "匹配度" ? 600 : 400, color: l === "匹配度" ? T : "#1a1a1a" } }, v)
+          ))
+        ),
+
+        // Chat box
+        React.createElement("div", {
+          ref: chatRef,
+          style: {
+            height: 360, overflowY: "auto", padding: "0.75rem",
+            border: "0.5px solid #e9ecef", borderRadius: 12,
+            background: "#fff", marginBottom: "0.75rem",
+            display: "flex", flexDirection: "column", gap: "0.75rem",
+          }
+        },
+          msgs.map((m, i) => React.createElement("div", {
+            key: i, style: { display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }
+          },
+            React.createElement("div", {
+              style: {
+                maxWidth: "80%", padding: "0.6rem 0.9rem", borderRadius: 10,
+                borderBottomRightRadius: m.role === "user" ? 2 : 10,
+                borderBottomLeftRadius: m.role === "assistant" ? 2 : 10,
+                background: m.role === "user" ? T : "#f1f3f5",
+                color: m.role === "user" ? "#fff" : "#1a1a1a",
+                fontSize: 13, lineHeight: 1.65,
+              }
+            },
+              m.role === "assistant" && React.createElement("div", {
+                style: { fontSize: 10, color: T, fontWeight: 600, marginBottom: 3 }
+              }, "面试官"),
+              m.content
+            )
+          )),
+          loading && React.createElement("div", { style: { display: "flex", justifyContent: "flex-start" } },
+            React.createElement("div", {
+              style: { padding: "0.5rem 0.9rem", background: "#f1f3f5", borderRadius: 10, fontSize: 12, color: "#868e96" }
+            }, "面试官正在思考...")
+          )
+        ),
+
+        // Input area
+        !ended
+          ? React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("input", {
+              value: input, onChange: e => setInput(e.target.value),
+              onKeyDown: e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } },
+              placeholder: "输入你的回答，按 Enter 发送...",
+              style: { flex: 1, fontSize: 13 }, disabled: loading
+            }),
+            React.createElement("button", {
+              onClick: handleSend, disabled: loading || !input.trim(),
+              style: {
+                padding: "0 1.1rem", background: T, color: "#fff",
+                border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 500,
+              }
+            }, "发送"),
+            msgs.length >= 8 && React.createElement("button", {
+              onClick: handleReport,
+              style: {
+                padding: "0 0.9rem", background: "#fff",
+                border: "0.5px solid #ced4da", borderRadius: 8,
+                cursor: "pointer", fontSize: 12, color: "#868e96",
+              }
+            }, "结束并生成报告")
+          )
+          : React.createElement("button", {
+            onClick: handleReport,
+            style: {
+              width: "100%", padding: "0.8rem", background: T, color: "#fff",
+              border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, cursor: "pointer",
+            }
+          }, "面试结束 → 查看逐题复盘报告 ✓")
+      ),
+
+      // ===== STEP 2: REPORT =====
+      step === 2 && React.createElement("div", null,
+        loading && React.createElement("div", {
+          style: { textAlign: "center", padding: "4rem 1rem", color: "#868e96" }
+        },
+          React.createElement("div", { style: { fontSize: 40, marginBottom: "1rem" } }, "⏳"),
+          React.createElement("div", { style: { fontSize: 14 } }, hint || "正在生成报告...")
+        ),
+
+        report && React.createElement("div", null,
+
+          // Overall stats
+          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.75rem", marginBottom: "1rem" } },
+            [
+              ["综合得分", `${Math.round(report.overall?.avg || 0)}`, T],
+              ["最强题目", `第 ${(report.overall?.best || 0) + 1} 题`, "#185FA5"],
+              ["需要加强", `第 ${(report.overall?.worst || 0) + 1} 题`, "#A32D2D"],
+            ].map(([l, v, c]) => React.createElement("div", {
+              key: l,
+              style: { background: "#fff", border: "0.5px solid #e9ecef", borderRadius: 8, padding: "0.75rem", textAlign: "center" }
+            },
+              React.createElement("div", { style: { fontSize: 11, color: "#868e96", marginBottom: 4 } }, l),
+              React.createElement("div", { style: { fontSize: 22, fontWeight: 600, color: c } }, v)
+            ))
+          ),
+
+          // Suggestions
+          React.createElement("div", {
+            style: { background: TL, border: `0.5px solid ${T}40`, borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1rem" }
+          },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: TD, marginBottom: 6 } }, "核心建议"),
+            (report.overall?.suggestions || []).map((s, i) =>
+              React.createElement("div", { key: i, style: { fontSize: 13, marginBottom: 4 } }, `· ${s}`)
+            )
+          ),
+
+          // Per-question cards
+          (report.items || []).map((item, i) =>
+            React.createElement("div", { key: i, style: { ...card, marginBottom: "0.75rem" } },
+
+              // Question header
+              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" } },
+                React.createElement("div", { style: { flex: 1, paddingRight: 12 } },
+                  React.createElement("span", {
+                    style: {
+                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+                      background: TL, color: TD, marginRight: 8,
+                    }
+                  }, `Q${i + 1}`),
+                  React.createElement("span", { style: { fontSize: 13, fontWeight: 500 } }, item.question)
+                ),
+                React.createElement("div", {
+                  style: {
+                    fontSize: 22, fontWeight: 600, whiteSpace: "nowrap",
+                    color: item.score >= 80 ? T : item.score >= 60 ? "#BA7517" : "#A32D2D"
+                  }
+                }, `${item.score || 0}分`)
+              ),
+
+              // Answer summary
+              React.createElement("div", {
+                style: { fontSize: 12, color: "#868e96", background: "#f8f9fa", padding: "0.5rem 0.75rem", borderRadius: 6, marginBottom: "0.75rem" }
+              }, "你的回答：", item.summary),
+
+              // STAR bars
+              React.createElement("div", { style: { marginBottom: "0.75rem" } },
+                ["s", "t", "a", "r"].map(k => React.createElement(StarBar, { key: k, k, score: item.star?.[k] || 0 }))
+              ),
+
+              // Issues
+              (item.issues || []).length > 0 && React.createElement("div", {
+                style: { fontSize: 12, color: "#993C1D", marginBottom: "0.75rem" }
+              }, "⚠️ ", (item.issues || []).join("；")),
+
+              // Reference toggle
+              React.createElement("button", {
+                onClick: () => setExp(x => ({ ...x, [i]: !x[i] })),
+                style: {
+                  width: "100%", padding: "0.55rem 0.75rem", textAlign: "left",
+                  background: exp[i] ? TL : "#f8f9fa",
+                  border: `0.5px solid ${exp[i] ? T + "60" : "#e9ecef"}`,
+                  borderRadius: 6, cursor: "pointer",
+                  fontSize: 13, color: exp[i] ? TD : "#868e96", fontWeight: 500,
+                }
+              }, `✅ ${exp[i] ? "收起" : "展开"} 可直接使用的参考答案 ${exp[i] ? "▲" : "▼"}`),
+
+              exp[i] && React.createElement("div", {
+                style: {
+                  marginTop: 8, padding: "0.75rem 1rem",
+                  background: TL, borderRadius: 8,
+                  fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-wrap", color: "#1a1a1a",
+                }
+              },
+                item.reference,
+                item.tip && React.createElement("div", {
+                  style: { marginTop: 8, fontSize: 12, color: TD, borderTop: `0.5px solid ${T}30`, paddingTop: 8 }
+                }, "💡 ", item.tip)
+              )
+            )
+          ),
+
+          // Restart
+          React.createElement("button", {
+            onClick: restart,
+            style: {
+              width: "100%", padding: "0.7rem", marginTop: 4,
+              background: "#fff", border: "0.5px solid #ced4da",
+              borderRadius: 8, cursor: "pointer", fontSize: 13, color: "#868e96",
+            }
+          }, "重新开始")
+        )
+      )
+    )
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>

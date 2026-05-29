@@ -17,11 +17,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 手动解析 body（兼容大文件）
-    let body = req.body;
-    if (typeof body === "string") {
-      body = JSON.parse(body);
-    }
+    // Vercel 已自动解析 req.body，直接使用即可
+    const body = req.body;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

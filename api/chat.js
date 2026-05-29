@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
     const body = JSON.stringify(req.body);
     const data = await new Promise((resolve, reject) => {
       const options = {
-        hostname: "api.anthropic.com",
+        hostname: "vip.aipro.love",
         path: "/v1/messages",
         method: "POST",
         headers: {

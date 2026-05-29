@@ -1,11 +1,3 @@
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "20mb",
-    },
-  },
-};
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -17,9 +9,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Vercel 已自动解析 req.body，直接使用即可
-    const body = req.body;
-
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -27,7 +16,7 @@ export default async function handler(req, res) {
         "x-api-key": sk-ant-ai-interview-coach,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(req.body),
     });
 
     const data = await response.json();
@@ -41,3 +30,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+

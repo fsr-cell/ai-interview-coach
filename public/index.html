@@ -36,7 +36,7 @@ const { useState, useRef, useEffect } = React;
 // 或接入 Coze 工作流 API
 // ============================================================
 const callAPI = async (system, messages) => {
-  const body = { model: "claude-sonnet-4-20250514", max_tokens: 2000, messages };
+  const body = { model: "claude-opus-4-7", max_tokens: 2000, messages };
   if (system) body.system = system;
   const res = await fetch("/api/chat", {
     method: "POST",

@@ -11,81 +11,41 @@ textarea { border: 1px solid #d0d5dd; border-radius: 8px; padding: 10px 12px; fo
 textarea:focus { border-color: #1D9E75; }
 button { cursor: pointer; font-family: inherit; }
 
-/* ===== 通话界面 ===== */
 .call-wrap {
   position: fixed; inset: 0; z-index: 999;
   background: linear-gradient(160deg, #0a1628 0%, #0d2b1f 50%, #0a1628 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
   padding: 60px 20px 50px;
 }
-
-/* 顶部：通话时长 */
 .call-timer { color: rgba(255,255,255,0.4); font-size: 15px; letter-spacing: 2px; }
-
-/* 中间：头像区 */
 .call-center { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-
 .avatar-area { position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
-.ripple {
-  position: absolute; border-radius: 50%;
-  border: 1.5px solid rgba(29,158,117,0.5);
-  animation: ripple 2.4s ease-out infinite;
-}
+.ripple { position: absolute; border-radius: 50%; border: 1.5px solid rgba(29,158,117,0.5); animation: ripple 2.4s ease-out infinite; }
 .ripple:nth-child(1) { animation-delay: 0s; }
 .ripple:nth-child(2) { animation-delay: 0.8s; }
 .ripple:nth-child(3) { animation-delay: 1.6s; }
-@keyframes ripple {
-  0%   { width: 120px; height: 120px; opacity: 0.7; }
-  100% { width: 260px; height: 260px; opacity: 0; }
-}
+@keyframes ripple { 0% { width:120px; height:120px; opacity:0.7; } 100% { width:260px; height:260px; opacity:0; } }
 .avatar-circle {
   width: 110px; height: 110px; border-radius: 50%; z-index: 1;
   background: linear-gradient(135deg, #1D9E75, #0a5c42);
   display: flex; align-items: center; justify-content: center;
-  font-size: 44px;
-  box-shadow: 0 0 0 3px rgba(29,158,117,0.4);
-  transition: box-shadow 0.3s;
+  font-size: 44px; box-shadow: 0 0 0 3px rgba(29,158,117,0.4); transition: box-shadow 0.3s;
 }
-.avatar-circle.talking {
-  box-shadow: 0 0 0 8px rgba(29,158,117,0.5), 0 0 30px rgba(29,158,117,0.3);
-  animation: avatarPulse 0.5s ease-in-out infinite alternate;
-}
-@keyframes avatarPulse {
-  from { transform: scale(1); }
-  to   { transform: scale(1.04); }
-}
-
+.avatar-circle.talking { box-shadow: 0 0 0 8px rgba(29,158,117,0.5), 0 0 30px rgba(29,158,117,0.3); animation: avatarPulse 0.5s ease-in-out infinite alternate; }
+@keyframes avatarPulse { from { transform:scale(1); } to { transform:scale(1.04); } }
 .caller-name { color: #fff; font-size: 24px; font-weight: 600; }
-.call-role   { color: rgba(255,255,255,0.45); font-size: 13px; margin-top: -12px; }
-
-/* 字幕区 */
-.subtitle-area {
-  width: 100%; max-width: 360px;
-  min-height: 80px; display: flex; flex-direction: column; gap: 10px; align-items: center;
-}
-.subtitle-bubble {
-  background: rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 12px 18px;
-  font-size: 14px; line-height: 1.7; text-align: center;
-  max-width: 340px; width: 100%;
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.call-role { color: rgba(255,255,255,0.45); font-size: 13px; margin-top: -12px; }
+.subtitle-area { width:100%; max-width:360px; min-height:80px; display:flex; flex-direction:column; gap:10px; align-items:center; }
+.subtitle-bubble { background: rgba(255,255,255,0.08); border-radius:16px; padding:12px 18px; font-size:14px; line-height:1.7; text-align:center; max-width:340px; width:100%; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 .subtitle-bubble.interviewer { color: rgba(255,255,255,0.9); }
-.subtitle-bubble.user        { color: rgba(29,158,117,0.9); background: rgba(29,158,117,0.1); }
-
-/* 状态栏 */
-.status-bar {
-  display: flex; align-items: center; gap: 8px;
-  color: rgba(255,255,255,0.5); font-size: 13px;
-}
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); }
-.status-dot.green { background: #1D9E75; animation: blink 1s ease-in-out infinite; }
-.status-dot.yellow { background: #f5a623; }
+.subtitle-bubble.user { color: rgba(29,158,117,0.9); background: rgba(29,158,117,0.1); }
+.status-bar { display:flex; align-items:center; gap:8px; color:rgba(255,255,255,0.5); font-size:13px; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.3); }
+.status-dot.green { background:#1D9E75; animation:blink 1s ease-in-out infinite; }
+.status-dot.yellow { background:#f5a623; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-/* 挂断（隐藏，仅面试结束时显示） */
-.end-hint { color: rgba(255,255,255,0.3); font-size: 12px; text-align: center; }
+.end-hint { color:rgba(255,255,255,0.3); font-size:12px; text-align:center; }
 </style>
 </head>
 <body>
@@ -120,8 +80,62 @@ const fileBlock = async f => {
     : { type:"image",    source:{ type:"base64", media_type:f.type, data:d } };
 };
 
-// ===== TTS =====
-const tts = (text, onEnd) => {
+// ===== 讯飞 TTS =====
+const xfTTS = async (text, voice, onEnd) => {
+  try {
+    const r = await fetch("/api/tts");
+    const { url, appid } = await r.json();
+
+    const ws = new WebSocket(url);
+    const chunks = [];
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        common: { app_id: appid },
+        business: { aue: "raw", auf: "audio/L16;rate=16000", vcn: voice || "x4_xiaoyan", tte: "utf8" },
+        data: { status: 2, text: btoa(unescape(encodeURIComponent(text))) }
+      }));
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.data && msg.data.audio) {
+        const bin = atob(msg.data.audio);
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        chunks.push(buf);
+      }
+      if (msg.data && msg.data.status === 2) {
+        ws.close();
+        // 合并 PCM 并播放
+        const totalLen = chunks.reduce((s, c) => s + c.length, 0);
+        const pcm = new Int16Array(totalLen / 2);
+        let offset = 0;
+        for (const c of chunks) {
+          for (let i = 0; i < c.length; i += 2) {
+            pcm[offset++] = (c[i + 1] << 8) | c[i];
+          }
+        }
+        const ctx = new AudioContext();
+        const buf = ctx.createBuffer(1, pcm.length, 16000);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.onended = () => { ctx.close(); if (onEnd) onEnd(); };
+        src.start();
+      }
+    };
+
+    ws.onerror = () => { fallbackTTS(text, onEnd); };
+  } catch(e) {
+    fallbackTTS(text, onEnd);
+  }
+};
+
+// 降级到浏览器 TTS
+const fallbackTTS = (text, onEnd) => {
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "zh-CN"; u.rate = 1.0;
@@ -176,37 +190,33 @@ function FileUpload({ accept, label, file, onFile }) {
 
 // ===== CALL SCREEN =====
 function CallScreen({ parsed, firstMsg, onEnd }) {
-  const [seconds, setSeconds]       = useState(0);
-  const [phase, setPhase]           = useState("interviewer_talking"); // interviewer_talking | listening | processing
+  const [seconds, setSeconds]   = useState(0);
+  const [phase, setPhase]       = useState("interviewer_talking");
   const [interviewerText, setInterviewerText] = useState(firstMsg);
-  const [userText, setUserText]     = useState("");
   const [transcript, setTranscript] = useState("");
 
-  const msgsRef        = useRef([{ role:"assistant", content:firstMsg }]);
-  const recogRef       = useRef(null);
-  const silenceRef     = useRef(null);
-  const finalTextRef   = useRef("");
-  const listeningRef   = useRef(false);
+  const msgsRef      = useRef([{ role:"assistant", content:firstMsg }]);
+  const recogRef     = useRef(null);
+  const silenceRef   = useRef(null);
+  const finalTextRef = useRef("");
+  const listeningRef = useRef(false);
+  const voice        = "x4_xiaoyan"; // 讯飞小燕
 
-  // 计时器
   useEffect(() => {
     const t = setInterval(() => setSeconds(s => s+1), 1000);
     return () => clearInterval(t);
   }, []);
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
-  // 停止语音识别
   const stopSTT = useCallback(() => {
     listeningRef.current = false;
     clearTimeout(silenceRef.current);
     if (recogRef.current) { try { recogRef.current.abort(); } catch(e){} recogRef.current = null; }
   }, []);
 
-  // 发送用户回答 → 获取 AI 回复 → 播放
   const sendAnswer = useCallback(async (text) => {
     stopSTT();
-    setUserText(text);
-    setTranscript("");
+    setTranscript(text);
     setPhase("processing");
     setInterviewerText("");
 
@@ -219,15 +229,15 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
       const ai = await callAPI(iTSys(parsed), apiMsgs);
       const hasEnd = ai.includes("[INTERVIEW_END]");
       const clean = ai.replace("[INTERVIEW_END]","").trim();
-
       msgsRef.current = [...next, { role:"assistant", content:clean }];
-      setUserText("");
+
+      setTranscript("");
       setInterviewerText(clean);
       setPhase("interviewer_talking");
 
-      tts(clean, () => {
-        if (hasEnd) { onEnd(msgsRef.current); }
-        else { startSTT(); }
+      xfTTS(clean, voice, () => {
+        if (hasEnd) onEnd(msgsRef.current);
+        else startSTT();
       });
     } catch(e) {
       setPhase("listening");
@@ -235,10 +245,9 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
     }
   }, [parsed, stopSTT, onEnd]);
 
-  // 开始语音识别
   const startSTT = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert("请使用 Chrome 浏览器以支持语音识别"); return; }
+    if (!SR) { alert("请使用 Chrome 浏览器"); return; }
     if (listeningRef.current) return;
 
     listeningRef.current = true;
@@ -248,9 +257,7 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
     setTranscript("");
 
     const recog = new SR();
-    recog.lang = "zh-CN";
-    recog.continuous = true;
-    recog.interimResults = true;
+    recog.lang = "zh-CN"; recog.continuous = true; recog.interimResults = true;
     recogRef.current = recog;
 
     recog.onresult = (e) => {
@@ -260,7 +267,6 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
         else interim = e.results[i][0].transcript;
       }
       setTranscript(finalTextRef.current + interim);
-      // 停顿 2 秒自动提交
       if (finalTextRef.current) {
         clearTimeout(silenceRef.current);
         silenceRef.current = setTimeout(() => {
@@ -268,22 +274,14 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
         }, 2000);
       }
     };
-
-    recog.onerror = (e) => {
-      if (e.error === "no-speech") { try { recog.start(); } catch(_){} }
-    };
-
-    recog.onend = () => {
-      if (listeningRef.current) { try { recog.start(); } catch(_){} }
-    };
-
+    recog.onerror = (e) => { if (e.error==="no-speech") { try { recog.start(); } catch(_){} } };
+    recog.onend = () => { if (listeningRef.current) { try { recog.start(); } catch(_){} } };
     recog.start();
   }, [sendAnswer]);
 
-  // 首次播放第一个问题
   useEffect(() => {
     setPhase("interviewer_talking");
-    tts(firstMsg, () => { startSTT(); });
+    xfTTS(firstMsg, voice, () => { startSTT(); });
     return () => { window.speechSynthesis.cancel(); stopSTT(); };
   }, []);
 
@@ -292,40 +290,27 @@ function CallScreen({ parsed, firstMsg, onEnd }) {
   const isListening = phase === "listening";
 
   return React.createElement("div", { className:"call-wrap" },
-
-    // 顶部计时
     React.createElement("div", { className:"call-timer" }, fmt(seconds)),
-
-    // 中间主体
     React.createElement("div", { className:"call-center" },
-
-      // 头像
       React.createElement("div", { className:"avatar-area" },
         React.createElement("div", { className:"ripple" }),
         React.createElement("div", { className:"ripple" }),
         React.createElement("div", { className:"ripple" }),
         React.createElement("div", { className:`avatar-circle ${isTalking?"talking":""}` }, "👔")
       ),
-
       React.createElement("div", { className:"caller-name" }, interviewing),
       React.createElement("div", { className:"call-role" }, parsed?.jd?.role || "面试官"),
-
-      // 字幕
       React.createElement("div", { className:"subtitle-area" },
         isTalking && interviewerText && React.createElement("div", { className:"subtitle-bubble interviewer", key:interviewerText.slice(0,10) }, interviewerText),
-        (isListening || phase==="processing") && React.createElement("div", { className:`subtitle-bubble user` },
+        (isListening || phase==="processing") && React.createElement("div", { className:"subtitle-bubble user" },
           transcript || (phase==="processing" ? "正在理解您的回答..." : "请说话...")
         )
       )
     ),
-
-    // 底部状态
     React.createElement("div", { style:{ display:"flex", flexDirection:"column", alignItems:"center", gap:12 } },
       React.createElement("div", { className:"status-bar" },
         React.createElement("div", { className:`status-dot ${isListening?"green":isTalking?"yellow":""}` }),
-        React.createElement("span", null,
-          isTalking ? "面试官说话中" : isListening ? "请直接说话，停顿 2 秒自动发送" : "处理中..."
-        )
+        React.createElement("span", null, isTalking?"面试官说话中": isListening?"请直接说话，停顿 2 秒自动发送":"处理中...")
       ),
       React.createElement("div", { className:"end-hint" }, "面试结束后将自动跳转复盘报告")
     )
@@ -389,8 +374,7 @@ function App() {
   };
 
   const handleCallEnd = async (finalMsgs) => {
-    setStep(2);
-    setLoading(true); setHint("AI 正在生成复盘报告...");
+    setStep(2); setLoading(true); setHint("AI 正在生成复盘报告...");
     const qa = [];
     for (let i = 0; i < finalMsgs.length-1; i++) {
       if (finalMsgs[i].role==="assistant" && finalMsgs[i+1]?.role==="user")
@@ -417,23 +401,15 @@ function App() {
   const card = { background:"#fff", border:"0.5px solid #e9ecef", borderRadius:12, padding:"1.25rem" };
 
   return React.createElement("div", { style:{ minHeight:"100vh", background:"#f5f6f7", padding:"1.5rem 1rem" } },
-
-    // 通话全屏界面
     step === 1 && parsed && firstMsg && React.createElement(CallScreen, { parsed, firstMsg, onEnd: handleCallEnd }),
-
     React.createElement("div", { style:{ maxWidth:720, margin:"0 auto" } },
-
-      // Header
       React.createElement("div", { style:{ textAlign:"center", marginBottom:"1.5rem" } },
         React.createElement("h1", { style:{ fontSize:22, fontWeight:700 } }, "🎙️ AI 面试教练"),
         React.createElement("p", { style:{ fontSize:13, color:"#868e96", marginTop:4 } }, "语音通话模拟面试 · 逐题复盘报告")
       ),
-
       step !== 1 && React.createElement(StepBar, { cur: step===2&&report?2:step }),
 
-      // STEP 0 - 填写信息
       step === 0 && React.createElement("div", { style:{ display:"flex", flexDirection:"column", gap:"1rem" } },
-
         React.createElement("div", { style:card },
           React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" } },
             React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "📄 简历"),
@@ -446,7 +422,6 @@ function App() {
             ? React.createElement("textarea", { rows:7, placeholder:"粘贴简历内容...", value:rText, onChange:e=>setRText(e.target.value) })
             : React.createElement(FileUpload, { accept:".pdf,image/*", label:"点击上传简历（PDF 或图片）", file:rFile, onFile:setRFile })
         ),
-
         React.createElement("div", { style:card },
           React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" } },
             React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "💼 岗位 JD"),
@@ -459,11 +434,9 @@ function App() {
             ? React.createElement("textarea", { rows:6, placeholder:"粘贴岗位JD内容...", value:jText, onChange:e=>setJText(e.target.value) })
             : React.createElement(FileUpload, { accept:"image/*", label:"点击上传JD截图", file:jFile, onFile:setJFile })
         ),
-
         React.createElement("div", { style:{ background:TL, border:`0.5px solid ${T}40`, borderRadius:8, padding:"0.75rem 1rem", fontSize:12, color:TD } },
-          "📞 开始后进入全屏通话界面，面试官自动语音提问，你直接开口回答，停顿 2 秒自动识别发送，全程无需点击任何按钮。请使用 Chrome 浏览器。"
+          "📞 开始后进入全屏通话界面，面试官用真人语音提问，你直接开口回答，停顿 2 秒自动识别发送，全程无需点击任何按钮。请使用 Chrome 浏览器。"
         ),
-
         loading
           ? React.createElement("div", { style:{ textAlign:"center", padding:"1.5rem", color:"#868e96", fontSize:14 } }, hint)
           : React.createElement("button", {
@@ -472,32 +445,23 @@ function App() {
             }, "📞  开始语音面试")
       ),
 
-      // STEP 2 - 复盘报告
       step === 2 && React.createElement("div", null,
         loading && React.createElement("div", { style:{ textAlign:"center", padding:"4rem 1rem", color:"#868e96" } },
           React.createElement("div", { style:{ fontSize:36, marginBottom:"1rem" } }, "⏳"),
           React.createElement("p", null, hint)
         ),
-
         report && React.createElement("div", null,
-          // 总分卡
           React.createElement("div", { style:{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"0.75rem", marginBottom:"1rem" } },
-            [["综合得分", `${Math.round(report.overall?.avg||0)}`, T],
-             ["最强题目", `第 ${(report.overall?.best||0)+1} 题`, "#185FA5"],
-             ["需要加强", `第 ${(report.overall?.worst||0)+1} 题`, "#A32D2D"]
+            [["综合得分",`${Math.round(report.overall?.avg||0)}`,T],["最强题目",`第 ${(report.overall?.best||0)+1} 题`,"#185FA5"],["需要加强",`第 ${(report.overall?.worst||0)+1} 题`,"#A32D2D"]
             ].map(([l,v,c]) => React.createElement("div", { key:l, style:{ background:"#fff", border:"0.5px solid #e9ecef", borderRadius:8, padding:"0.75rem", textAlign:"center" } },
               React.createElement("div", { style:{ fontSize:11, color:"#868e96", marginBottom:4 } }, l),
               React.createElement("div", { style:{ fontSize:22, fontWeight:600, color:c } }, v)
             ))
           ),
-
-          // 核心建议
           React.createElement("div", { style:{ background:TL, border:`0.5px solid ${T}40`, borderRadius:8, padding:"0.75rem 1rem", marginBottom:"1rem" } },
             React.createElement("div", { style:{ fontSize:12, fontWeight:600, color:TD, marginBottom:6 } }, "核心建议"),
             (report.overall?.suggestions||[]).map((s,i) => React.createElement("div", { key:i, style:{ fontSize:13, marginBottom:4 } }, `· ${s}`))
           ),
-
-          // 逐题复盘
           (report.items||[]).map((item, i) =>
             React.createElement("div", { key:i, style:{ ...card, marginBottom:"0.75rem" } },
               React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"0.75rem" } },
@@ -522,7 +486,6 @@ function App() {
               )
             )
           ),
-
           React.createElement("button", {
             onClick: restart,
             style:{ width:"100%", padding:"0.7rem", marginTop:4, background:"#fff", border:"0.5px solid #ced4da", borderRadius:8, fontSize:13, color:"#868e96" }

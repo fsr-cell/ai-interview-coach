@@ -92,7 +92,7 @@ const xfTTS = async (text, voice, onEnd) => {
     ws.onopen = () => {
       ws.send(JSON.stringify({
         header: { app_id: appid, status: 0 },
-        parameter: { oral: { vcn: voice || "x6_lingfeiyi_pro", oral_level: "mid", aue: "raw", auf: "audio/L16;rate=16000", tte: "utf8" } },
+        parameter: { oral: { vcn: voice || "x6_lingfeiyi_pro", oral_level: "mid" } },
         payload: { text: { encoding: "utf8", compress: "raw", format: "plain", status: 0, text: btoa(unescape(encodeURIComponent(text))) } }
       }));
     };

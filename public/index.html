@@ -405,6 +405,43 @@ function App() {
     window.speechSynthesis.cancel();
   };
 
+  const DEMO_RESUME = `姓名：陈浩
+应聘岗位：Java开发工程师
+
+教育背景：
+西安电子科技大学 计算机科学与技术 本科 2021-2025
+
+在校经历：
+2024.03-2024.08 字节跳动 Java开发实习生
+- 参与广告投放系统后端开发，基于Spring Boot完成3个需求迭代
+- 使用Redis实现广告频次控制功能，减少重复曝光率18%
+- 独立修复线上Bug 6个，编写接口文档10份
+
+项目经历：
+校园二手交易平台（毕业设计）
+- 独立开发前后端，后端基于Spring Boot + MySQL + Redis
+- 实现用户注册登录、商品发布、即时聊天等核心功能
+- 部署至云服务器，上线后注册用户200+
+
+技能：
+Java、Spring Boot、MySQL、Redis、MyBatis、Git、Linux基础`;
+
+  const DEMO_JD = `岗位：初级Java开发工程师
+公司：某互联网公司
+
+岗位职责：
+1. 参与业务系统的功能开发与维护
+2. 根据需求文档完成接口开发和联调
+3. 编写单元测试，保障代码质量
+4. 配合团队完成代码审查和技术文档编写
+
+任职要求：
+1. 计算机相关专业本科及以上学历，2025届应届毕业生
+2. 熟悉Java基础，了解Spring Boot框架
+3. 了解MySQL基本操作
+4. 有实习经历或项目经验优先
+5. 学习能力强，有良好的团队协作精神`;
+
   const tabBtn = active => ({
     padding:"5px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
     background: active?T:"transparent", color: active?"#fff":"#868e96",
@@ -422,6 +459,12 @@ function App() {
       step !== 1 && React.createElement(StepBar, { cur: step===2&&report?2:step }),
 
       step === 0 && React.createElement("div", { style:{ display:"flex", flexDirection:"column", gap:"1rem" } },
+        React.createElement("div", { style:{ textAlign:"right" } },
+          React.createElement("button", {
+            onClick: () => { setRMode("text"); setJMode("text"); setRText(DEMO_RESUME); setJText(DEMO_JD); },
+            style:{ fontSize:12, padding:"4px 12px", borderRadius:6, border:"1px solid #ced4da", background:"#fff", color:"#868e96", cursor:"pointer" }
+          }, "📋 填入测试例子（Java应届生）")
+        ),
         React.createElement("div", { style:card },
           React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" } },
             React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "📄 简历"),

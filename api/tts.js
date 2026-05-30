@@ -11,8 +11,8 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "讯飞配置缺失" });
   }
 
-  const host = "tts-api.xfyun.cn";
-  const path = "/v2/tts";
+  const host = "cbm01.cn-huabei-1.xf-yun.com";
+  const path = "/v1/private/mcd9m97e6";
   const date = new Date().toUTCString();
 
   const signatureOrigin = `host: ${host}\ndate: ${date}\nGET ${path} HTTP/1.1`;

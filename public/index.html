@@ -87,7 +87,34 @@ const xfTTS = async (text, voice, onEnd) => {
     const { url, appid } = await r.json();
 
     const ws = new WebSocket(url);
-    const chunks = [];
+    const ctx = new AudioContext();
+    let nextStartTime = ctx.currentTime;
+    let isEnded = false;
+    let pendingChunks = 0;
+
+    const playChunk = (uint8arr) => {
+      const pcm = new Int16Array(uint8arr.length / 2);
+      for (let i = 0; i < uint8arr.length; i += 2) {
+        pcm[i / 2] = (uint8arr[i + 1] << 8) | uint8arr[i];
+      }
+      const audioBuf = ctx.createBuffer(1, pcm.length, 16000);
+      const ch = audioBuf.getChannelData(0);
+      for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+      const src = ctx.createBufferSource();
+      src.buffer = audioBuf;
+      src.connect(ctx.destination);
+      const startAt = Math.max(nextStartTime, ctx.currentTime);
+      src.start(startAt);
+      nextStartTime = startAt + audioBuf.duration;
+      pendingChunks++;
+      src.onended = () => {
+        pendingChunks--;
+        if (isEnded && pendingChunks === 0) {
+          ctx.close();
+          if (onEnd) onEnd();
+        }
+      };
+    };
 
     ws.onopen = () => {
       ws.send(JSON.stringify({
@@ -111,32 +138,16 @@ const xfTTS = async (text, voice, onEnd) => {
         const bin = atob(audio);
         const buf = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-        chunks.push(buf);
+        playChunk(buf); // 收到就立即播放
       }
-      const status = msg.header?.status;
-      if (status === 2) {
+      if (msg.header?.status === 2) {
         ws.close();
-        const totalLen = chunks.reduce((s, c) => s + c.length, 0);
-        const pcm = new Int16Array(totalLen / 2);
-        let offset = 0;
-        for (const c of chunks) {
-          for (let i = 0; i < c.length; i += 2) {
-            pcm[offset++] = (c[i + 1] << 8) | c[i];
-          }
-        }
-        const ctx = new AudioContext();
-        const buf = ctx.createBuffer(1, pcm.length, 16000);
-        const ch = buf.getChannelData(0);
-        for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(ctx.destination);
-        src.onended = () => { ctx.close(); if (onEnd) onEnd(); };
-        src.start();
+        isEnded = true;
+        if (pendingChunks === 0) { ctx.close(); if (onEnd) onEnd(); }
       }
     };
 
-    ws.onerror = () => { fallbackTTS(text, onEnd); };
+    ws.onerror = () => { ctx.close(); fallbackTTS(text, onEnd); };
   } catch(e) {
     fallbackTTS(text, onEnd);
   }

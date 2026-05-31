@@ -380,13 +380,13 @@ function App() {
   const [exp, setExp]       = useState({});
 
   const handleStart = async () => {
-    if (!rText && !rFile) { alert("请输入或上传简历"); return; }
+    if (!rFile) { alert("请上传简历 PDF"); return; }
     if (!jText && !jFile) { alert("请输入或上传JD"); return; }
     setLoading(true); setHint("AI 正在解析简历和岗位信息...");
     try {
       const content = [];
-      if (rFile) { content.push(await fileBlock(rFile)); content.push({ type:"text", text:"以上是候选人简历。" }); }
-      else content.push({ type:"text", text:`简历：\n${rText}` });
+      content.push(await fileBlock(rFile));
+      content.push({ type:"text", text:"以上是候选人简历。" });
       if (jFile) { content.push(await fileBlock(jFile)); content.push({ type:"text", text:"以上是岗位JD，请完成解析。" }); }
       else content.push({ type:"text", text:`JD：\n${jText}\n\n请完成解析。` });
 
@@ -484,28 +484,22 @@ Java、Spring Boot、MySQL、Redis、MyBatis、Git、Linux基础`;
           }, "📋 填入测试例子（Java应届生）")
         ),
         React.createElement("div", { style:card },
-          React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" } },
-            React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "📄 简历"),
-            React.createElement("div", { style:{ display:"flex", gap:6 } },
-              React.createElement("button", { style:tabBtn(rMode==="text"), onClick:()=>setRMode("text") }, "文字粘贴"),
-              React.createElement("button", { style:tabBtn(rMode==="file"), onClick:()=>setRMode("file") }, "图片/PDF")
-            )
+          React.createElement("div", { style:{ marginBottom:"0.75rem" } },
+            React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "📄 简历")
           ),
-          rMode==="text"
-            ? React.createElement("textarea", { rows:7, placeholder:"粘贴简历内容...", value:rText, onChange:e=>setRText(e.target.value) })
-            : React.createElement(FileUpload, { accept:".pdf,image/*", label:"点击上传简历（PDF 或图片）", file:rFile, onFile:setRFile })
+          React.createElement(FileUpload, { accept:".pdf", label:"点击上传简历 PDF", file:rFile, onFile:setRFile })
         ),
         React.createElement("div", { style:card },
           React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.75rem" } },
             React.createElement("span", { style:{ fontSize:14, fontWeight:600 } }, "💼 岗位 JD"),
             React.createElement("div", { style:{ display:"flex", gap:6 } },
               React.createElement("button", { style:tabBtn(jMode==="text"), onClick:()=>setJMode("text") }, "文字粘贴"),
-              React.createElement("button", { style:tabBtn(jMode==="file"), onClick:()=>setJMode("file") }, "拍照/图片")
+              React.createElement("button", { style:tabBtn(jMode==="file"), onClick:()=>setJMode("file") }, "上传图片")
             )
           ),
           jMode==="text"
             ? React.createElement("textarea", { rows:6, placeholder:"粘贴岗位JD内容...", value:jText, onChange:e=>setJText(e.target.value) })
-            : React.createElement(FileUpload, { accept:"image/*", label:"点击上传JD截图", file:jFile, onFile:setJFile })
+            : React.createElement(FileUpload, { accept:"image/*", label:"点击上传 JD 截图（JPG / PNG）", file:jFile, onFile:setJFile })
         ),
         React.createElement("div", { style:{ background:TL, border:`0.5px solid ${T}40`, borderRadius:8, padding:"0.75rem 1rem", fontSize:12, color:TD } },
           "📞 开始后进入全屏通话界面，面试官用真人语音提问，你直接开口回答，停顿 2 秒自动识别发送，全程无需点击任何按钮。请使用 Chrome 浏览器。"
